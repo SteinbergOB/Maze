@@ -1,4 +1,4 @@
-from maze_blocks import Block, Gate, Teleport
+from maze_blocks import Block, Gate, Teleport, Food
 
 
 map_string = ['1 111111111111111111',
@@ -148,11 +148,11 @@ map_lvl2 = [[m_dig00, m_dig01]]
 
 m_dig00 = [[[1], [0], [1], [1], [1], [1], [1], [1], [1], [1]],
            [[1], [0], [0], [0], [1], [0], [4], [0], [0], [1]],
-           [[1], [1], [1], [0], [1], [0], [1], [0], [1], [1]],
+           [[1], [1], [1], [0, 5], [1], [0], [1], [0], [1], [1]],
            [[1], [0], [0], [0], [1], [0], [1], [0], [0], [1]],
            [[1], [0], [1], [1], [1], [0], [1], [0], [1], [1]],
            [[1], [0], [1], [0], [1], [0], [1], [0], [0], [1]],
-           [[1], [0], [1], [0], [0], [0], [1], [0], [1], [1]],
+           [[1], [0], [1], [0], [0], [0], [1], [0, 6], [1], [1]],
            [[1], [0], [1], [0], [1], [0], [1], [0], [0], [2]],
            [[1], [0], [0], [0], [1], [0, 3], [1], [0], [1], [1]],
            [[1], [1], [1], [1], [1], [1], [1], [1], [1], [1]]]
@@ -163,7 +163,7 @@ maps_ = [map_lvl1, map_lvl2, map_lvl3, map_lvl4]
 
 masks_ = [(0, 0, 0, 1), (0, 0, 0, 1), (0, 0, 0, 1), (0, 0, 0, 1)]
 
-frogs_ = [[], [(0, 0, 7, 6), (0, 1, 5, 5)], [], [(0, 0, 1, 8)]]
+ghosts_ = [[], [(0, 0, 7, 6), (0, 1, 5, 5)], [], [(0, 0, 1, 8)]]
 
 teleports_ = [[], [], [], [((0, 0, 3, 2), (0, 0, 0, 5))]]
 
@@ -217,6 +217,10 @@ def map_dig_to_map_obj(map_dig, square_size):
                         elif dig == 4:
                             obj = Gate('gate', 'red_gate', (cc * square_size + 1, cr * square_size + 1,
                                                             square_size - 2, square_size - 2))
+                        elif dig == 5:
+                            obj = Food('food', 'apple', (cc * square_size, cr * square_size))
+                        elif dig == 6:
+                            obj = Food('food', 'cherry', (cc * square_size, cr * square_size))
 
                         square.append(obj)
                     cell_row.append(square)
@@ -229,7 +233,7 @@ def map_dig_to_map_obj(map_dig, square_size):
         for teleport_square, destination_square in self.all_teleports[0]:
             teleport = Teleport(teleport_square, destination_square)
             (mr, mc, cr, cc) = teleport_square
-            self.frogs.append(teleport)
+            self.ghosts.append(teleport)
             self.map[mr][mc][cr][cc].append(teleport)
         '''
 

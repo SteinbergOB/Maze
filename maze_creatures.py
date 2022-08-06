@@ -11,16 +11,26 @@ class Mosquito:
         self.radius = radius
         self.color = pg.Color(100, 100, 100)
 
+        self.key_left = pg.K_LEFT
+        self.key_right = pg.K_RIGHT
+        self.key_up = pg.K_UP
+        self.key_down = pg.K_DOWN
+        self.key_shoot = pg.K_SPACE
+
         self.lives = 3
         self.score = 0
         self.bag = {}
+
+        self.bullets = []
+        self.direction = (0, 1)
 
     def key_pressed(self, game):
         key = pg.key.get_pressed()
 
         mr, mc, cr, cc = self.square
         dmr, dmc, dcr, dcc = 0, 0, 0, 0
-        if key[pg.K_UP]:
+        if key[self.key_up]:
+            self.direction = (0, -1)
             dcr = -1
             if cr + dcr < 0:
                 if self.square[0] > 0:
@@ -29,7 +39,8 @@ class Mosquito:
                     dcr = 0
             self.move(game, (dmr, dmc, dcr, dcc))
 
-        elif key[pg.K_DOWN]:
+        elif key[self.key_down]:
+            self.direction = (0, 1)
             dcr = 1
             if cr + dcr > game.lvl.cell_rows - 1:
                 if self.square[0] < game.lvl.map_rows - 1:
@@ -38,7 +49,8 @@ class Mosquito:
                     dcr = 0
             self.move(game, (dmr, dmc, dcr, dcc))
 
-        elif key[pg.K_LEFT]:
+        elif key[self.key_left]:
+            self.direction = (-1, 0)
             dcc = -1
             if cc + dcc < 0:
                 if self.square[1] > 0:
@@ -47,7 +59,8 @@ class Mosquito:
                     dcc = 0
             self.move(game, (dmr, dmc, dcr, dcc))
 
-        elif key[pg.K_RIGHT]:
+        elif key[self.key_right]:
+            self.direction = (1, 0)
             dcc = 1
             if cc + dcc > game.lvl.cell_cols - 1:
                 if self.square[1] < game.lvl.map_cols - 1:
@@ -55,6 +68,11 @@ class Mosquito:
                 else:
                     dcc = 0
             self.move(game, (dmr, dmc, dcr, dcc))
+
+        if key[self.key_shoot]:
+            bullet = Bullet(self.color, (self.square[0], self.square[1]),
+                            (self.square[3]*50 + 25, self.square[2]*50 + 25), 3, 3, 5, self.direction)
+            self.bullets.append(bullet)
 
     def move(self, game, d_square):
         cr = (self.square[2] + d_square[2]) % game.lvl.cell_rows
@@ -108,19 +126,67 @@ class Mosquito:
         return False
 
 
-class Frog:
+class Bullet:
+    def __init__(self, color, cell, position, width, height, speed, direction):
+        self.color = color
+        self.width = width
+        self.height = height
+        self.cell = cell
+        self.position = position
+        self.speed = speed
+        self.direction = direction
+
+    def move(self, game):
+        x = self.position[0] + self.speed*self.direction[0]
+        y = self.position[1] + self.speed*self.direction[1]
+
+        if self.collide(game, self.cell, x, y):
+            game.lvl.mask.bullets.remove(self)
+        else:
+            self.position = (x, y)
+
+    def collide(self, game, cell, x, y):
+        if (x - self.width <= 0) or (x >= game.lvl.cell_cols * game.square_size) or (y - self.height <= 0) or\
+                (y >= game.lvl.cell_rows*game.square_size):
+            return True
+
+        mr, mc = cell
+        cr = y // game.square_size
+        cc = x // game.square_size
+        for obj in game.lvl.map[mr][mc][cr][cc]:
+            if obj.class_name == 'enemy':
+                game.lvl.ghosts .remove(obj)
+                game.lvl.map[mr][mc][cr][cc].remove(obj)
+                return True
+
+        return False
+
+    def draw(self, game):
+        pg.draw.rect(game.lvl.window, self.color, (self.position[0], self.position[1], self.width, self.height))
+
+
+class Enemy:
     def __init__(self, radius, square):
         self.class_name = 'enemy'
-        self.name = 'frog'
+        self.name = 'ghost'
 
         self.square = square
         self.d_row = 0
         self.d_col = 0
 
         self.radius = radius
-
         self.color = pg.Color(0, 200, 0)
 
+    def is_ate(self, square):
+        return self.square == square
+
+    def draw(self, game):
+        pg.draw.circle(game.lvl.window, self.color, (self.square[3]*game.square_size + game.square_size//2,
+                                                     self.square[2]*game.square_size + game.square_size//2),
+                       self.radius)
+
+
+class Ghost(Enemy):
     def move(self, game, row, col):
         if self.square[2] < row:
             self.d_row = 1
@@ -140,10 +206,18 @@ class Frog:
         self.square = (self.square[0], self.square[1], self.square[2] + self.d_row, self.square[3] + self.d_col)
         game.lvl.map[self.square[0]][self.square[1]][self.square[2]][self.square[3]].append(self)
 
-    def is_ate(self, square):
-        return self.square == square
 
-    def draw(self, game):
-        pg.draw.circle(game.lvl.window, self.color, (self.square[3]*game.square_size + game.square_size//2,
-                                                     self.square[2]*game.square_size + game.square_size//2),
-                       self.radius)
+class Ant(Enemy):
+    def __init__(self, radius, square, trajectory):
+        super(Ant, self).__init__(radius, square)
+        self.trajectory = trajectory
+        self.move_idx = 0
+
+    def move(self, game):
+        self.move_idx = (self.move_idx + 1) % len(self.trajectory)
+        mr, mc, cr, cc = self.trajectory[self.move_idx]
+
+        game.lvl.map[self.square[0]][self.square[1]][self.square[2]][self.square[3]].remove(self)
+        self.square = (mr, mc, cr, cc)
+        game.lvl.map[self.square[0]][self.square[1]][self.square[2]][self.square[3]].append(self)
+
