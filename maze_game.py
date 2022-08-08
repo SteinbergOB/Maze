@@ -1,4 +1,5 @@
 import pygame as pg
+
 from maze_map import map_dig_to_map_obj
 from maze_creatures import Mosquito, Ghost, Ant
 from maze_map import maps_, masks_, ghosts_, teleports_
@@ -18,6 +19,7 @@ class Game:
         self.clock = pg.time.Clock()
         self.fps = 100
         self.count = 0
+        self.graph = []
 
     def new_lvl(self):
         self.lvl.new_lvl(self)
@@ -42,6 +44,10 @@ class Game:
         for bullet in self.lvl.mask.bullets:
             bullet.move(self)
 
+        if self.lvl.mask.is_path:
+            self.build_graph()
+            self.lvl.mask.build_path(self)
+
         if self.count % 50 == 0:
             for ghost in self.lvl.ghosts:
                 if (ghost.square[0], ghost.square[1]) == (self.lvl.mask.square[0], self.lvl.mask.square[1]):
@@ -55,6 +61,8 @@ class Game:
     def draw_frame(self):
         self.lvl.window.fill((0, 0, 0))
         self.draw_cell()
+        if self.lvl.mask.is_path:
+            self.lvl.mask.draw_path(self)
         self.footer.draw(self)
         self.menu.draw(self)
 
@@ -62,6 +70,30 @@ class Game:
 
     def remove_object(self):
         pass
+
+    def build_graph(self):
+        self.graph = []
+
+        cell = self.lvl.map[self.lvl.mask.square[0]][self.lvl.mask.square[1]]
+        for y, row in enumerate(cell):
+            for x, col in enumerate(row):
+                node = x + y*self.lvl.cell_cols
+                self.graph.append([])
+
+                if cell[y][x][0].class_name == 'ground' or\
+                        ((cell[y][x][0].class_name == 'gate') and cell[y][x][0].open):
+                    if (0 < x) and (cell[y][x-1][0].class_name == 'ground') or \
+                            ((cell[y][x-1][0].class_name == 'gate') and cell[y][x-1][0].open):
+                        self.graph[node].append((1, node - 1))
+                    if (x < self.lvl.cell_cols - 1) and (cell[y][x+1][0].class_name == 'ground') or \
+                            ((cell[y][x+1][0].class_name == 'gate') and cell[y][x+1][0].open):
+                        self.graph[node].append((1, node + 1))
+                    if (0 < y) and (cell[y-1][x][0].class_name == 'ground') or \
+                            ((cell[y-1][x][0].class_name == 'gate') and cell[y-1][x][0].open):
+                        self.graph[node].append((1, node - self.lvl.cell_cols))
+                    if (y < self.lvl.cell_rows - 1) and (cell[y+1][x][0].class_name == 'ground') or \
+                            ((cell[y+1][x][0].class_name == 'gate') and cell[y+1][x][0].open):
+                        self.graph[node].append((1, node + self.lvl.cell_cols))
 
 
 class Footer:

@@ -1,4 +1,5 @@
 import pygame as pg
+from heapq import *
 
 
 class Mosquito:
@@ -23,6 +24,10 @@ class Mosquito:
 
         self.bullets = []
         self.direction = (0, 1)
+
+        self.ancestors = None
+        self.goal = None
+        self.is_path = False
 
     def key_pressed(self, game):
         key = pg.key.get_pressed()
@@ -124,6 +129,51 @@ class Mosquito:
             if obj.class_name == 'enemy':
                 return True
         return False
+
+    def build_path(self, game):
+        cell_cols = game.lvl.cell_cols
+
+        mr, mc, cr, cc = self.square
+        start = cr*cell_cols + cc
+
+        queue = []
+        heappush(queue, (0, start))
+        d = [1000000]*cell_cols*game.lvl.cell_rows
+        d[start] = 0
+        ancestors = {start: None}
+
+        goal_r, goal_c = self.goal // cell_cols, self.goal % cell_cols
+
+        while queue:
+            cur_cost, u = heappop(queue)
+            if u == self.goal:
+                break
+
+            for neighbour in game.graph[u]:
+                weight_uv, v = neighbour
+
+                if d[u] + weight_uv < d[v]:
+                    d[v] = d[u] + weight_uv
+                    ancestors[v] = u
+
+                    v_r, v_c = v // cell_cols, v % cell_cols
+
+                    heuristic = abs(v_r - goal_r) + abs(v_c - goal_c)
+                    priority = d[u] + weight_uv + heuristic
+                    heappush(queue, (priority, v))
+        self.ancestors = ancestors
+
+    def draw_path(self, game):
+        current = self.goal
+        while current and (current in self.ancestors):
+            x = int((current % game.lvl.cell_cols + 0.5) * game.square_size)
+            y = int((current // game.lvl.cell_cols + 0.5) * game.square_size)
+            radius = 5
+            pg.draw.circle(game.lvl.window, pg.Color('blue'), (x, y), radius)
+            current = self.ancestors[current]
+
+        # pg.draw.circle(self.lvl.window, pg.Color('green'), *get_circle(*start))
+        # pg.draw.circle(self.lvl.window, pg.Color('magenta'), *get_circle(*goal))
 
 
 class Bullet:

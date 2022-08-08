@@ -208,7 +208,7 @@ def map_dig_to_map_obj(map_dig, square_size):
                         if dig == 1:
                             obj = Block('wall', 'stone_wall', (cc * square_size + 1, cr * square_size + 1,
                                                                square_size - 2, square_size - 2))
-                        if dig == 2:
+                        elif dig == 2:
                             obj = Block('exit', 'exit', (cc * square_size + 1, cr * square_size + 1,
                                                          square_size - 2, square_size - 2))
                         elif dig == 3:
