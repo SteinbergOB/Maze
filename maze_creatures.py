@@ -270,4 +270,3 @@ class Ant(Enemy):
         game.lvl.map[self.square[0]][self.square[1]][self.square[2]][self.square[3]].remove(self)
         self.square = (mr, mc, cr, cc)
         game.lvl.map[self.square[0]][self.square[1]][self.square[2]][self.square[3]].append(self)
-
