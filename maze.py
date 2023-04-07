@@ -15,7 +15,8 @@ def main():
             if event.type == pg.QUIT:
                 pg.quit()
                 quit()
-            elif event.type == pg.MOUSEBUTTONDOWN:
+            elif (event.type == pg.MOUSEBUTTONDOWN) and (event.button == 1):
+
                 game.lvl.mask.is_path = True
 
                 x, y = pg.mouse.get_pos()

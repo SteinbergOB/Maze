@@ -258,10 +258,14 @@ class Ghost(Enemy):
 
 
 class Ant(Enemy):
-    def __init__(self, radius, square, trajectory):
+    def __init__(self, radius, square, start, finish):
         super(Ant, self).__init__(radius, square)
-        self.trajectory = trajectory
+        self.trajectory = build_trajectory(start, finish)
         self.move_idx = 0
+
+    def build_trajectory(self, start, finish):
+        trajectory = start + finish
+        return trajectory
 
     def move(self, game):
         self.move_idx = (self.move_idx + 1) % len(self.trajectory)
